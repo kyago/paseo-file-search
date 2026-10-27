@@ -1,9 +1,10 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { toAttachmentItems } from "./server/attachments.ts";
-import { listFiles, matchFiles } from "./server/files.ts";
+import { listEntries, listFiles, matchFiles } from "./server/files.ts";
 import { attachmentSearch, searchFiles } from "./shared/contracts";
 
 const PICKER_LIMIT = 30;
+const PICKER_FOLDERS = 8;
 
 export default function contribute(server: PluginServerContext) {
   server.handle(searchFiles, async ({ cwd, query, limit }) => {
@@ -12,6 +13,7 @@ export default function contribute(server: PluginServerContext) {
     return { files: hits.map((path) => ({ path })), total, indexed: files.length };
   });
 
+  // Folders that match lead, so a reference to a whole folder is one pick; files follow.
   server.handle(attachmentSearch, async ({ query }, { paseo }) => {
     if (!query.trim()) return { items: [] };
     const { entries } = await paseo.workspaces.list();
@@ -22,7 +24,13 @@ export default function contribute(server: PluginServerContext) {
       if (!roots.has(root)) roots.set(root, workspace.title ?? workspace.name);
     }
     const items = await Promise.all(
-      [...roots].map(async ([root, name]) => toAttachmentItems(name, root, matchFiles(await listFiles(root), query, PICKER_LIMIT).hits)),
+      [...roots].map(async ([root, name]) => {
+        const { files, dirs } = await listEntries(root);
+        return [
+          ...toAttachmentItems(name, root, matchFiles(dirs, query, PICKER_FOLDERS).hits, "directory"),
+          ...toAttachmentItems(name, root, matchFiles(files, query, PICKER_LIMIT).hits),
+        ];
+      }),
     );
     return { items: items.flat().slice(0, PICKER_LIMIT) };
   });

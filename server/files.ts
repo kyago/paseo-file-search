@@ -46,20 +46,33 @@ async function withWalk(root: string): Promise<string[]> {
   return files;
 }
 
-const index = new Map<string, { at: number; files: string[] }>();
+const index = new Map<string, { at: number; files: string[]; dirs: string[] }>();
+
+/** Every ancestor directory of the given relative file paths, each once. */
+export function directoriesOf(files: string[]): string[] {
+  const dirs = new Set<string>();
+  for (const file of files) {
+    for (let slash = file.indexOf("/"); slash >= 0; slash = file.indexOf("/", slash + 1)) dirs.add(file.slice(0, slash));
+  }
+  return [...dirs];
+}
 
 /**
  * Relative paths of every file under `root`, honouring .gitignore: ripgrep's walker when it is
- * installed, else git's index, else a plain directory walk. Cached briefly, since the list is
+ * installed, else git's index, else a plain directory walk. Directories are derived from the
+ * files, so an empty or fully ignored folder is absent. Cached briefly, since the list is
  * requested on every keystroke.
  */
-export async function listFiles(root: string): Promise<string[]> {
+export async function listEntries(root: string): Promise<{ files: string[]; dirs: string[] }> {
   const cached = index.get(root);
-  if (cached && Date.now() - cached.at < INDEX_TTL_MS) return cached.files;
+  if (cached && Date.now() - cached.at < INDEX_TTL_MS) return cached;
   const files = (await withRipgrep(root)) ?? (await withGit(root)) ?? (await withWalk(root));
-  index.set(root, { at: Date.now(), files });
-  return files;
+  const entry = { at: Date.now(), files, dirs: directoriesOf(files) };
+  index.set(root, entry);
+  return entry;
 }
+
+export const listFiles = async (root: string): Promise<string[]> => (await listEntries(root)).files;
 
 /** Lower-case NFC, so Korean typed in the app matches names macOS stores decomposed. */
 const fold = (text: string) => text.normalize("NFC").toLowerCase();
