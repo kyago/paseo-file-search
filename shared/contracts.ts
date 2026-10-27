@@ -13,3 +13,25 @@ export const searchFiles = defineRpc({
     indexed: z.number(),
   }),
 });
+
+/**
+ * The same search for the composer's attachment picker, which only sends a query, so the daemon
+ * searches every open workspace. Item shape is what Paseo's picker expects.
+ */
+export const attachmentSearch = defineRpc({
+  name: "files.attachments",
+  input: z.object({ query: z.string() }),
+  output: z.object({
+    items: z.array(
+      z.object({
+        id: z.string(),
+        identifier: z.string(),
+        title: z.string(),
+        subtitle: z.string().optional(),
+        url: z.string(),
+        text: z.string(),
+        resourceType: z.string(),
+      }),
+    ),
+  }),
+});

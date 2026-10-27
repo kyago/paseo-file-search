@@ -1,5 +1,6 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { SearchPanel } from "./client/search-panel";
+import { attachmentSearch } from "./shared/contracts";
 
 export default function contribute(client: PluginClientContext) {
   const removers = [
@@ -15,6 +16,15 @@ export default function contribute(client: PluginClientContext) {
       onSelect({ openPanel }) {
         openPanel("search", { location: "explorer" });
       },
+    }),
+    // The composer's attach menu: the stand-in for `@`, which plugins cannot extend.
+    client.addAttachmentSource({
+      id: "files",
+      title: "파일 검색",
+      icon: "Search",
+      pickerTitle: "파일 참조 붙이기",
+      searchPlaceholder: "파일 이름·경로 (띄어쓰기 = 모두 포함)",
+      search: attachmentSearch,
     }),
   ];
   return () => {

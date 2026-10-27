@@ -3,6 +3,7 @@ import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { test } from "node:test";
+import { toAttachmentItems } from "../server/attachments.ts";
 import { listFiles, matchFiles } from "../server/files.ts";
 
 const files = [
@@ -44,4 +45,14 @@ test("listFiles honours .gitignore and skips hidden entries", async () => {
   await writeFile(path.join(root, "out", "c.js"), "");
   const listed = (await listFiles(root)).sort();
   assert.deepEqual(listed, ["src/a.ts"]);
+});
+
+test("attachment items carry a valid file URL and the quoted absolute path", () => {
+  const [item, rootFile] = toAttachmentItems("secretary", "/Users/me/my repo", ["memory/facts/paseo-usage.md", "README.md"]);
+  assert.equal(item.identifier, "paseo-usage.md");
+  assert.equal(item.title, "memory/facts");
+  assert.equal(item.subtitle, "secretary · memory/facts/paseo-usage.md");
+  assert.equal(new URL(item.url).pathname, "/Users/me/my%20repo/memory/facts/paseo-usage.md");
+  assert.equal(item.text, '참조 파일: "/Users/me/my repo/memory/facts/paseo-usage.md"');
+  assert.equal(rootFile.title, "");
 });
