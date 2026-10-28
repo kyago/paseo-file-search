@@ -1,13 +1,8 @@
 import type { ComponentType } from "react";
-import { Platform } from "react-native";
 import type { PluginButtonContentProps, PluginButtonRegistration, PluginClientContext } from "@getpaseo/plugin/client";
 
-// This plugin typechecks without the DOM library. Declare only what this module uses.
-declare const document: { querySelector(selector: string): unknown };
-
-/** Accessibility labels; the shortcut finds the buttons in the page by them. */
+/** The pill's accessibility label; the shortcut finds it in the page by it. */
 export const PILL_TITLE = "파일 검색 열기";
-export const HEADER_TITLE = "파일 검색 열기 (상단)";
 
 /**
  * Keeps one registration per live id: `list` names what should exist now, `add` registers one.
@@ -67,39 +62,4 @@ export function installPills(client: PluginClientContext, Content: ComponentType
         button: { title: PILL_TITLE, label: "파일 검색", icon: "Search", behavior: { kind: "popover", Content } },
       }),
   );
-}
-
-/**
- * A search icon in every workspace header. A brand-new session has no agent yet, so Paseo shows
- * no composer pills there; the header button is the entry that is always present.
- */
-export function installHeaderButtons(client: PluginClientContext, Content: ComponentType<PluginButtonContentProps>): () => void {
-  const buttons = new Set<PluginButtonRegistration>();
-  // On the web the header icon steps aside whenever a pill is on screen, so a chat shows one entry.
-  const watcher = Platform.OS === "web" ? setInterval(() => {
-    const visible = !document.querySelector(`[aria-label="${PILL_TITLE}"]`);
-    for (const button of buttons) button.update({ visible });
-  }, 500) : undefined;
-  const stop = keepInSync(
-    async () => {
-      const { entries } = await client.paseo.workspaces.list();
-      const live = new Map<string, string>();
-      for (const workspace of entries) if (!workspace.archivingAt) live.set(workspace.id, workspace.id);
-      return live;
-    },
-    (onChange) => client.paseo.workspaces.subscribe(onChange),
-    (_, workspaceId) => {
-      const button = client.addHeaderButton({
-        id: "search",
-        workspaceId,
-        button: { title: HEADER_TITLE, icon: "Search", behavior: { kind: "popover", Content } },
-      });
-      buttons.add(button);
-      return { update: (patch) => button.update(patch), remove: () => (buttons.delete(button), button.remove()) };
-    },
-  );
-  return () => {
-    clearInterval(watcher);
-    stop();
-  };
 }

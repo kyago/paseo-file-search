@@ -1,6 +1,6 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { clickPill, installTrigger } from "./client/composer";
-import { HEADER_TITLE, installHeaderButtons, installPills, PILL_TITLE } from "./client/pills";
+import { installPills, PILL_TITLE } from "./client/pills";
 import { SearchBox } from "./client/search-box";
 import { SettingsBridge } from "./client/settings-bridge";
 import { TriggerSettingsScreen } from "./client/settings-screen";
@@ -12,12 +12,10 @@ export default function contribute(client: PluginClientContext) {
   const removers = [
     // A "파일 검색" pill above every chat box; its popover searches, inserts a reference, or opens the file.
     installPills(client, SearchBox),
-    // The same popover from a header icon, shown only while no pill is on screen (a new session has no agent yet).
-    installHeaderButtons(client, SearchBox),
     client.addSettingsScreen({ id: "trigger", title: "Options", icon: "Keyboard", Component: TriggerSettingsScreen }),
     client.addSidebarFooterItem({ id: "settings-bridge", title: "파일 검색 단축키 설정", Component: SettingsBridge }),
-    // The shortcut presses the pill of the open chat, else the header icon.
-    installTrigger(() => void (clickPill(PILL_TITLE) || clickPill(HEADER_TITLE))),
+    // The shortcut presses the pill of the open chat. A brand-new session has no agent, so no pill yet.
+    installTrigger(() => void clickPill(PILL_TITLE)),
   ];
   return () => {
     for (const remove of removers) void remove();
