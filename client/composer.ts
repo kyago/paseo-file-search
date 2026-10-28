@@ -26,7 +26,7 @@ interface KeyEvent {
   preventDefault(): void;
   stopPropagation(): void;
 }
-declare const document: { activeElement: TextArea | null; querySelector(selector: string): TextArea | null };
+declare const document: { activeElement: TextArea | null; querySelector(selector: string): (TextArea & { click(): void }) | null };
 declare const navigator: { platform: string; userAgent: string };
 declare const window: {
   location: { pathname: string };
@@ -70,6 +70,9 @@ export function installTrigger(open: (workspaceId: string) => void): () => void 
     if (!workspaceId) return;
     event.preventDefault();
     event.stopPropagation();
+    const now = Date.now();
+    if (now - (shared.lastTriggerAt ?? 0) < 200) return;
+    shared.lastTriggerAt = now;
     const composer = isComposer(active) ? active : document.querySelector(COMPOSER);
     shared.pending = composer ? { workspaceId, composer, start: composer.selectionStart, end: composer.selectionEnd } : undefined;
     open(workspaceId);
@@ -79,8 +82,17 @@ export function installTrigger(open: (workspaceId: string) => void): () => void 
   return () => window.removeEventListener("keydown", onKeyDown, true);
 }
 
+/** Presses the pill with this accessibility label, if the page shows one. */
+export function clickPill(title: string): boolean {
+  if (Platform.OS !== "web") return false;
+  const pill = document.querySelector(`[aria-label="${title}"]`);
+  if (!pill) return false;
+  pill.click();
+  return true;
+}
+
 /**
- * Puts a quoted path into the chat box where the trigger was pressed (or at the caret) and returns
+ * Puts a quoted path into the chat box where the shortcut was pressed (or at the caret) and returns
  * focus there. React owns the box, so the value goes through the prototype setter and an input
  * event, the way React reads user typing.
  */

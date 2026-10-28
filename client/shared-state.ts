@@ -1,9 +1,9 @@
 import type { TriggerValues } from "../shared/settings";
 
-/** A reference the panel should put into the chat box instead of opening a file. */
+/** A reference the search should put into the chat box instead of opening a file. */
 export interface PendingInsert {
   workspaceId: string;
-  /** The chat box element and the caret position when the trigger was typed. */
+  /** The chat box element and the caret position when the shortcut was pressed. */
   composer: unknown;
   start: number;
   end: number;
@@ -12,8 +12,10 @@ export interface PendingInsert {
 interface Shared {
   settings?: TriggerValues;
   pending?: PendingInsert;
-  /** Panels listening for a trigger, so an already open panel can take focus. */
+  /** Search boxes listening for the shortcut, so an already open one can take focus. */
   focusListeners: Set<() => void>;
+  /** Every host installs a key listener; this keeps one key press from firing twice. */
+  lastTriggerAt?: number;
 }
 
 // Paseo mounts one sidebar item per plugin across hosts and one key listener per host; they meet here.
