@@ -6,8 +6,9 @@ export const triggerSettings = defineSettings({
   scope: "host",
   version: 1,
   schema: z.object({
-    // Typing this at a word start in the chat box opens the search panel (desktop and web only).
-    trigger: z.string().min(1).max(2).default("#"),
+    // A key combination such as "Cmd+Shift+O" that opens the search panel from the chat (desktop
+    // and web only). A single character instead makes that character the trigger at a word start.
+    shortcut: z.string().min(1).max(40).default("Cmd+Shift+O"),
     enabled: z.boolean().default(true),
   }),
 });

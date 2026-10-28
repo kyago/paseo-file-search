@@ -1,12 +1,15 @@
 import { useSettings } from "@getpaseo/plugin/client";
 import { SettingsCard, SettingsInput, SettingsRow, SettingsSection, SettingsSwitch } from "@getpaseo/plugin/client/ui";
+import { useState } from "react";
 import { triggerSettings } from "../shared/settings";
+import { isValidShortcut } from "./composer";
 
 export function TriggerSettingsScreen() {
   const settings = useSettings(triggerSettings);
+  const [invalid, setInvalid] = useState<string | null>(null);
   if (settings.status !== "ready") {
     return (
-      <SettingsSection title="채팅창 단축 기호">
+      <SettingsSection title="채팅창 단축키">
         <SettingsCard>
           <SettingsRow label="설정" hint={settings.status === "loading" ? "불러오는 중…" : settings.error} />
         </SettingsCard>
@@ -15,23 +18,27 @@ export function TriggerSettingsScreen() {
   }
   const { values, revision } = settings;
   return (
-    <SettingsSection title="채팅창 단축 기호">
+    <SettingsSection title="채팅창 단축키">
       <SettingsCard>
         <SettingsSwitch
-          label="기호로 파일 검색 열기"
-          hint="채팅 입력창에서 단어 첫머리에 기호를 치면 파일 검색 패널이 열리고, 고른 파일이 입력창에 참조로 들어갑니다. 데스크톱·웹에서만 동작합니다."
+          label="단축키로 파일 검색 열기"
+          hint="워크스페이스에서 단축키를 누르면 파일 검색 패널이 열리고, 고른 파일이 채팅 입력창에 참조로 들어갑니다. 데스크톱·웹에서만 동작합니다."
           error={settings.saveError ?? undefined}
           value={values.enabled}
           onValueChange={(enabled) => void settings.save({ ...values, enabled }, revision)}
         />
         <SettingsInput
-          label="기호"
-          hint="한 글자. @와 /는 Paseo가 이미 쓰므로 피하세요."
-          initialValue={values.trigger}
-          placeholder="#"
+          label="단축키"
+          hint="예: Cmd+Shift+O, Ctrl+Alt+F, Mod+Shift+Space (Mod = Mac은 Cmd, 그 외 Ctrl). Paseo가 이미 쓰는 조합은 피하세요. 한 글자만 적으면 그 글자를 입력창 단어 첫머리에 칠 때 열립니다."
+          error={invalid ?? undefined}
+          initialValue={values.shortcut}
+          placeholder="Cmd+Shift+O"
           onChangeText={(text) => {
-            const trigger = text.trim().slice(0, 1);
-            if (trigger && trigger !== values.trigger) void settings.save({ ...values, trigger }, revision);
+            const shortcut = text.trim();
+            if (!shortcut || shortcut === values.shortcut) return setInvalid(null);
+            if (!isValidShortcut(shortcut)) return setInvalid("형식을 알 수 없습니다. 예: Cmd+Shift+O");
+            setInvalid(null);
+            void settings.save({ ...values, shortcut }, revision);
           }}
         />
       </SettingsCard>

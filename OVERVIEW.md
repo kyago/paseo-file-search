@@ -4,6 +4,6 @@ Open it from the Explorer sidebar as the "파일 검색" tab, or from Cmd+K ("�
 
 The same search sits in the composer's attach menu as "파일 검색", a stand-in for `@`, which plugins cannot extend. It searches every open workspace on the host; a picked file or folder becomes a chip, and the agent receives the quoted absolute path, the same kind of reference the `@` mention sends. Matching folders are listed first, with a trailing slash.
 
-On desktop and web, typing a trigger character (`#` by default, changeable or switchable off under Options) at a word start in the chat box opens the panel; the file you pick goes into the chat box as a quoted path, the same text Paseo's `@` mention inserts. The phone apps have no chat box hook, so use the attach menu there.
+On desktop and web, a shortcut (`Cmd+Shift+O` by default, changeable or switchable off under Options; a single character there becomes a typed trigger instead) opens the panel from anywhere in a workspace; the file you pick goes into the chat box at the caret as a quoted path, the same text Paseo's `@` mention inserts. The phone apps have no chat box hook, so use the attach menu there.
 
 The file list honours .gitignore and skips hidden entries. It comes from ripgrep when it is installed on the daemon machine, else from git, else from a plain directory walk, and is refreshed every ten seconds. Requires Paseo 0.13 or later.

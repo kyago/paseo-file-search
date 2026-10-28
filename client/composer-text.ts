@@ -33,3 +33,68 @@ export function workspaceIdFromPath(pathname: string): string | null {
 
 declare function atob(data: string): string;
 declare const TextDecoder: new () => { decode(bytes: Uint8Array): string };
+
+export interface Shortcut {
+  meta: boolean;
+  ctrl: boolean;
+  alt: boolean;
+  shift: boolean;
+  /** Lower-case key name: a letter, digit, "space", "enter", "/" and so on. */
+  key: string;
+}
+
+export interface KeyLike {
+  key: string;
+  code: string;
+  metaKey: boolean;
+  ctrlKey: boolean;
+  altKey: boolean;
+  shiftKey: boolean;
+}
+
+const MODIFIERS: Record<string, keyof Omit<Shortcut, "key">> = {
+  cmd: "meta",
+  command: "meta",
+  meta: "meta",
+  win: "meta",
+  ctrl: "ctrl",
+  control: "ctrl",
+  alt: "alt",
+  option: "alt",
+  opt: "alt",
+  shift: "shift",
+};
+
+/**
+ * "Cmd+Shift+O" style text to a shortcut; "Mod" is Cmd on a Mac and Ctrl elsewhere. A bare single
+ * character has no modifiers and is matched as a typed character instead. Null when malformed.
+ */
+export function parseShortcut(text: string, isMac: boolean): Shortcut | null {
+  const parts = text.trim().split("+").map((part) => part.trim());
+  if (parts.length === 0 || parts.some((part) => !part)) return null;
+  const shortcut: Shortcut = { meta: false, ctrl: false, alt: false, shift: false, key: "" };
+  for (const part of parts.slice(0, -1)) {
+    const name = part.toLowerCase();
+    const modifier = name === "mod" ? (isMac ? "meta" : "ctrl") : MODIFIERS[name];
+    if (!modifier || shortcut[modifier]) return null;
+    shortcut[modifier] = true;
+  }
+  const key = parts[parts.length - 1].toLowerCase();
+  if (key === "" || MODIFIERS[key] || key === "mod") return null;
+  if (!isCharacterTrigger(shortcut) && key.length > 1 && !/^(space|enter|tab|escape|backspace|delete|arrow(up|down|left|right)|f[1-9]|f1[0-2]|home|end|pageup|pagedown)$/.test(key)) return null;
+  shortcut.key = key;
+  return shortcut;
+}
+
+/** A shortcut with no modifiers and a one-character key is typed, not pressed. */
+export const isCharacterTrigger = (shortcut: Shortcut) => !shortcut.meta && !shortcut.ctrl && !shortcut.alt && !shortcut.shift && [...shortcut.key].length === 1;
+
+/** Letters and digits match by physical key, so Shift or Option producing another glyph still counts. */
+export function matchesShortcut(event: KeyLike, shortcut: Shortcut): boolean {
+  if (event.metaKey !== shortcut.meta || event.ctrlKey !== shortcut.ctrl || event.altKey !== shortcut.alt || event.shiftKey !== shortcut.shift) return false;
+  const key = shortcut.key;
+  if (/^[a-z]$/.test(key)) return event.code === `Key${key.toUpperCase()}`;
+  if (/^[0-9]$/.test(key)) return event.code === `Digit${key}`;
+  if (key === "space") return event.code === "Space";
+  return event.key.toLowerCase() === key;
+}
