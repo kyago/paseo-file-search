@@ -1,6 +1,6 @@
 import type { PluginClientContext } from "@getpaseo/plugin/client";
 import { clickPill, installTrigger } from "./client/composer";
-import { installPills, PILL_TITLE } from "./client/pills";
+import { HEADER_TITLE, installHeaderButtons, installPills, PILL_TITLE } from "./client/pills";
 import { SearchPanel } from "./client/search-panel";
 import { SearchPopover } from "./client/search-popover";
 import { SettingsBridge } from "./client/settings-bridge";
@@ -13,6 +13,8 @@ export default function contribute(client: PluginClientContext) {
   const removers = [
     // A "파일 검색" pill above every chat box; its popover searches and inserts a reference.
     installPills(client, SearchPopover),
+    // A search icon in the workspace header, there before a session has an agent (no pills yet).
+    installHeaderButtons(client, SearchPopover),
     // A tab in the Explorer sidebar (or the main pane) with the same search.
     client.addWorkspacePanel({ id: "search", title: "파일 검색", icon: "Search", locations: ["explorer", "workspace"], Component: SearchPanel }),
     // Cmd+K entry: type "파일" or "file" to reach it.
@@ -37,10 +39,10 @@ export default function contribute(client: PluginClientContext) {
     }),
     client.addSettingsScreen({ id: "trigger", title: "Options", icon: "Keyboard", Component: TriggerSettingsScreen }),
     client.addSidebarFooterItem({ id: "settings-bridge", title: "파일 검색 단축키 설정", Component: SettingsBridge }),
-    // The shortcut presses the pill of the open chat; without one (no agent open) it falls back to the panel.
+    // The shortcut presses the pill of the open chat, else the header icon, else opens the panel.
     // Every host installs a listener; only the host holding the workspace can open the panel, the rest throw and are ignored.
     installTrigger((workspaceId) => {
-      if (clickPill(PILL_TITLE)) return;
+      if (clickPill(PILL_TITLE) || clickPill(HEADER_TITLE)) return;
       try {
         client.openPanel("search", { workspaceId, location: "explorer" });
       } catch {}
