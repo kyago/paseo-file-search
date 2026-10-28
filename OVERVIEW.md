@@ -1,4 +1,4 @@
-Finds files in the current workspace by name or path. Every word you type has to appear somewhere in the path, so `paseo usage` finds `memory/facts/paseo-usage.md` and nothing else; there is no fuzzy matching, and Korean works. Words that hit the file name rank above words that only hit a folder.
+Finds files in the current workspace by name or path. Every word you type has to appear somewhere in the path, so `paseo usage` finds `memory/facts/paseo-usage.md` and nothing else; there is no fuzzy matching, and Korean works. Words that hit the file name rank above words that only hit a folder. Matching folders are listed first with a trailing slash; picking one narrows the search to it, or in chat mode inserts it as a reference.
 
 Open it from the Explorer sidebar as the "파일 검색" tab, or from Cmd+K ("파일 검색"). Enter opens the first result; clicking a row opens that file in Paseo's own file tab. On the phone apps, where the file tab cannot be driven, the path is copied instead.
 

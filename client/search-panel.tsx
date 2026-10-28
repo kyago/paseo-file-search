@@ -57,7 +57,14 @@ export function SearchPanel({ theme, layout, workspaceId, host }: PluginWorkspac
     shared.pending = undefined;
     setInserting(false);
   };
-  const submit = () => files[0] && (inserting ? insert(files[0].path) : open(files[0].path));
+  // A folder narrows the search to itself (nothing in Paseo opens a folder); in chat mode it is a reference like a file.
+  const narrow = (path: string) => {
+    setText(`${path}/`);
+    input.current?.focus();
+  };
+  const pick = (entry: { path: string; kind: "file" | "directory" }) =>
+    inserting ? insert(entry.path) : entry.kind === "directory" ? narrow(entry.path) : open(entry.path);
+  const submit = () => files[0] && pick(files[0]);
 
   return (
     <View style={styles.screen}>
@@ -79,8 +86,8 @@ export function SearchPanel({ theme, layout, workspaceId, host }: PluginWorkspac
           ? String(results.error)
           : !query
             ? inserting
-              ? "Enter는 첫 번째 결과를 채팅에 참조로 넣습니다."
-              : "검색어를 입력하세요. Enter는 첫 번째 결과를 엽니다."
+              ? "Enter는 첫 번째 결과를 채팅에 참조로 넣습니다. 폴더도 됩니다."
+              : "검색어를 입력하세요. Enter는 첫 번째 결과를 열고, 폴더는 그 안으로 좁힙니다."
             : results.data
               ? `${results.data.total}건 (색인 ${results.data.indexed}개${results.data.total > files.length ? `, ${files.length}건 표시` : ""})`
               : "찾는 중…"}
@@ -89,17 +96,15 @@ export function SearchPanel({ theme, layout, workspaceId, host }: PluginWorkspac
         data={files}
         keyExtractor={(file) => file.path}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <FileRow path={item.path} onPress={() => (inserting ? insert(item.path) : open(item.path))} onInsert={() => insert(item.path)} styles={styles} />
-        )}
+        renderItem={({ item }) => <FileRow path={item.path} kind={item.kind} onPress={() => pick(item)} onInsert={() => insert(item.path)} styles={styles} />}
       />
     </View>
   );
 }
 
-function FileRow({ path, onPress, onInsert, styles }: { path: string; onPress: () => void; onInsert: () => void; styles: Styles }) {
+function FileRow({ path, kind, onPress, onInsert, styles }: { path: string; kind: "file" | "directory"; onPress: () => void; onInsert: () => void; styles: Styles }) {
   const slash = path.lastIndexOf("/");
-  const name = path.slice(slash + 1);
+  const name = kind === "directory" ? `${path.slice(slash + 1)}/` : path.slice(slash + 1);
   const directory = slash >= 0 ? path.slice(0, slash) : "";
   return (
     <View style={styles.rowWrap}>
