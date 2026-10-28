@@ -5,9 +5,11 @@ import { SearchPanel } from "./client/search-panel";
 import { SearchPopover } from "./client/search-popover";
 import { SettingsBridge } from "./client/settings-bridge";
 import { TriggerSettingsScreen } from "./client/settings-screen";
-import { attachmentSearch } from "./shared/contracts";
+import { shared } from "./client/shared-state";
+import { attachmentSearch, clientLog } from "./shared/contracts";
 
 export default function contribute(client: PluginClientContext) {
+  shared.log = (message) => void client.rpc(clientLog, { message }).catch(() => {});
   const removers = [
     // A "파일 검색" pill above every chat box; its popover searches and inserts a reference.
     installPills(client, SearchPopover),

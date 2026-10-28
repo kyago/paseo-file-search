@@ -7,6 +7,7 @@ import { shared } from "./shared-state";
 export function SettingsBridge() {
   const settings = useSettings(triggerSettings);
   useEffect(() => {
+    shared.log?.(`settings bridge: ${settings.status}${settings.status === "ready" ? " " + JSON.stringify(settings.values) : ""}`);
     if (settings.status === "ready") shared.settings = settings.values;
   }, [settings]);
   return null;

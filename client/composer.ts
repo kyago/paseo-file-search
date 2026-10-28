@@ -26,7 +26,12 @@ interface KeyEvent {
   preventDefault(): void;
   stopPropagation(): void;
 }
-declare const document: { activeElement: TextArea | null; querySelector(selector: string): (TextArea & { click(): void }) | null };
+declare const document: {
+  activeElement: TextArea | null;
+  querySelector(selector: string): (TextArea & { click(): void; dispatchEvent(event: unknown): boolean; getAttribute(name: string): string | null }) | null;
+  querySelectorAll(selector: string): ArrayLike<{ tagName: string; getAttribute(name: string): string | null }>;
+};
+const log = (message: string) => shared.log?.(message);
 declare const navigator: { platform: string; userAgent: string };
 declare const window: {
   location: { pathname: string };
@@ -34,6 +39,9 @@ declare const window: {
   removeEventListener(type: string, listener: (event: KeyEvent) => void, capture: boolean): void;
 };
 declare const Event: new (type: string, init: { bubbles: boolean }) => unknown;
+type PressInit = { bubbles: boolean; cancelable: boolean; button: number; buttons: number; pointerId: number; pointerType: string; isPrimary: boolean };
+declare const MouseEvent: new (type: string, init: PressInit) => unknown;
+declare const PointerEvent: new (type: string, init: PressInit) => unknown;
 declare const Object: { getOwnPropertyDescriptor(target: unknown, key: string): { set?: (value: string) => void } | undefined; getPrototypeOf(target: unknown): unknown };
 
 const COMPOSER = '[data-testid="message-input-root"] textarea';
@@ -57,13 +65,16 @@ function currentShortcut(): Shortcut | null {
  */
 export function installTrigger(open: (workspaceId: string) => void): () => void {
   if (Platform.OS !== "web") return () => {};
+  log(`trigger installed; mac=${isMac()} path=${window.location.pathname} settings=${JSON.stringify(shared.settings ?? null)}`);
   const onKeyDown = (event: KeyEvent) => {
     const shortcut = currentShortcut();
-    if (!shared.settings?.enabled || !shortcut || event.isComposing || event.defaultPrevented || event.repeat) return;
+    if (!shared.settings?.enabled || !shortcut || event.isComposing || event.repeat) return;
     const active = document.activeElement;
     const typed = isCharacterTrigger(shortcut);
+    // Paseo marks modifier combos as handled before plugins see them, even unbound ones, so only a
+    // typed character respects defaultPrevented (there it means an autocomplete took the key).
     if (typed) {
-      if (event.key !== shortcut.key || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (event.defaultPrevented || event.key !== shortcut.key || event.metaKey || event.ctrlKey || event.altKey) return;
       if (!isComposer(active) || !startsWord(active.value, active.selectionStart)) return;
     } else if (!matchesShortcut(event, shortcut)) return;
     const workspaceId = workspaceIdFromPath(window.location.pathname);
@@ -87,7 +98,10 @@ export function clickPill(title: string): boolean {
   if (Platform.OS !== "web") return false;
   const pill = document.querySelector(`[aria-label="${title}"]`);
   if (!pill) return false;
-  pill.click();
+  // The pill is a menu trigger; depending on Paseo's build it opens on pointer down or on click, so send the whole press.
+  for (const [type, Ctor] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]] as const) {
+    pill.dispatchEvent(new Ctor(type, { bubbles: true, cancelable: true, button: 0, buttons: type.endsWith("down") ? 1 : 0, pointerId: 1, pointerType: "mouse", isPrimary: true }));
+  }
   return true;
 }
 

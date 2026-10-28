@@ -1,7 +1,7 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { toAttachmentItems } from "./server/attachments.ts";
 import { listEntries, matchFiles } from "./server/files.ts";
-import { attachmentSearch, searchFiles } from "./shared/contracts";
+import { attachmentSearch, clientLog, searchFiles } from "./shared/contracts";
 import { triggerSettings } from "./shared/settings";
 
 const PICKER_LIMIT = 30;
@@ -11,6 +11,10 @@ const PANEL_FOLDERS = 8;
 export default function contribute(server: PluginServerContext) {
   // The client reads these through settings RPCs the daemon only exposes once the server registers them.
   server.registerSettings(triggerSettings);
+  server.handle(clientLog, ({ message }) => {
+    console.log(`[client] ${message}`);
+    return {};
+  });
   server.handle(searchFiles, async ({ cwd, query, limit }) => {
     const { files, dirs } = await listEntries(cwd);
     const folders = matchFiles(dirs, query, PANEL_FOLDERS).hits.map((path) => ({ path, kind: "directory" as const }));

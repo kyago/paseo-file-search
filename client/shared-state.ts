@@ -16,6 +16,8 @@ interface Shared {
   focusListeners: Set<() => void>;
   /** Every host installs a key listener; this keeps one key press from firing twice. */
   lastTriggerAt?: number;
+  /** Diagnostics to the daemon log; set by whichever host installed last. */
+  log?: (message: string) => void;
 }
 
 // Paseo mounts one sidebar item per plugin across hosts and one key listener per host; they meet here.

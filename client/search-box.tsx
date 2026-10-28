@@ -38,6 +38,12 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
     shared.focusListeners.add(onTrigger);
     return () => void shared.focusListeners.delete(onTrigger);
   }, [workspaceId]);
+  // Paseo's popover moves focus to its own surface right after opening, so autoFocus alone loses;
+  // keep taking focus back for a moment after mount.
+  useEffect(() => {
+    const timers = [0, 60, 150, 300, 600].map((ms) => setTimeout(() => input.current?.focus(), ms));
+    return () => timers.forEach(clearTimeout);
+  }, []);
   useEffect(() => {
     const timer = setTimeout(() => setQuery(text.trim()), 150);
     return () => clearTimeout(timer);
@@ -81,7 +87,7 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
     <View style={styles.screen}>
       <TextInput
         ref={input}
-        style={styles.input}
+        style={[styles.input, plainList ? styles.inputBare : null]}
         value={text}
         onChangeText={setText}
         onSubmitEditing={() => files[0] && pick(files[0])}
@@ -92,17 +98,19 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
         autoCorrect={false}
         clearButtonMode="while-editing"
       />
-      <Text style={styles.muted}>
-        {results.error
-          ? String(results.error)
-          : !query
-            ? mode === "insert"
-              ? "Enter는 첫 번째 결과를 채팅에 참조로 넣습니다. 폴더도 됩니다."
-              : "검색어를 입력하세요. Enter는 첫 번째 결과를 열고, 폴더는 그 안으로 좁힙니다."
-            : results.data
-              ? `${results.data.total}건 (색인 ${results.data.indexed}개${results.data.total > shown.length ? `, ${shown.length}건 표시` : ""})`
-              : "찾는 중…"}
-      </Text>
+      {plainList && !query ? null : (
+        <Text style={styles.muted}>
+          {results.error
+            ? String(results.error)
+            : !query
+              ? mode === "insert"
+                ? "Enter는 첫 번째 결과를 채팅에 참조로 넣습니다. 폴더도 됩니다."
+                : "검색어를 입력하세요. Enter는 첫 번째 결과를 열고, 폴더는 그 안으로 좁힙니다."
+              : results.data
+                ? `${results.data.total}건 (색인 ${results.data.indexed}개${results.data.total > shown.length ? `, ${shown.length}건 표시` : ""})`
+                : "찾는 중…"}
+        </Text>
+      )}
       {plainList ? (
         <View>{shown.map(row)}</View>
       ) : (
@@ -151,6 +159,8 @@ function buildStyles(theme: PluginTheme, compact: boolean) {
       backgroundColor: theme.colors.surface1,
       fontSize: 14,
     },
+    // The popover surface already has its own background.
+    inputBare: { backgroundColor: "transparent" },
     rowWrap: { flexDirection: "row", alignItems: "center", gap: 6 },
     row: { flex: 1, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6 },
     rowPressed: { backgroundColor: theme.colors.surface2 },
