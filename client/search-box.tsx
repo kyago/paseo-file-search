@@ -29,6 +29,8 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
   const input = useRef<NativeTextInput>(null);
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
+  // Arrow keys move this over the results while the search box keeps focus; Enter picks it.
+  const [active, setActive] = useState(0);
   useEffect(() => {
     const onTrigger = () => {
       if (shared.pending?.workspaceId !== workspaceId) return;
@@ -56,6 +58,18 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
   });
   const files: Entry[] = query ? (results.data?.files ?? []) : [];
   const shown = plainList ? files.slice(0, 20) : files;
+  const list = useRef<{ scrollToIndex(params: { index: number; viewPosition?: number }): void }>(null);
+  useEffect(() => setActive(0), [results.data]);
+  const move = (step: number) => {
+    if (shown.length === 0) return;
+    const next = Math.min(shown.length - 1, Math.max(0, active + step));
+    setActive(next);
+    if (!plainList) {
+      try {
+        list.current?.scrollToIndex({ index: next, viewPosition: 0.5 });
+      } catch {}
+    }
+  };
 
   const open = (path: string) => {
     if (openWorkspaceFile({ serverId: host.id, workspaceId, path })) return;
@@ -81,7 +95,9 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
     input.current?.focus();
   };
   const pick = (entry: Entry) => (mode === "insert" ? insert(entry.path) : entry.kind === "directory" ? narrow(entry.path) : open(entry.path));
-  const row = (entry: Entry) => <FileRow key={entry.path} entry={entry} onPress={() => pick(entry)} onInsert={() => insert(entry.path)} styles={styles} />;
+  const row = (entry: Entry, index: number) => (
+    <FileRow key={entry.path} entry={entry} active={index === active} onPress={() => pick(entry)} onInsert={() => insert(entry.path)} styles={styles} />
+  );
 
   return (
     <View style={[styles.screen, plainList ? styles.popover : null]}>
@@ -90,7 +106,13 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
         style={[styles.input, plainList ? styles.inputBare : null]}
         value={text}
         onChangeText={setText}
-        onSubmitEditing={() => files[0] && pick(files[0])}
+        onSubmitEditing={() => shown[active] && pick(shown[active])}
+        onKeyPress={(event) => {
+          const key = event.nativeEvent.key;
+          if (key !== "ArrowDown" && key !== "ArrowUp") return;
+          event.preventDefault();
+          move(key === "ArrowDown" ? 1 : -1);
+        }}
         placeholder={plainList ? "파일·폴더 이름 검색" : "파일 이름·경로 (띄어쓰기 = 모두 포함)"}
         placeholderTextColor={theme.colors.foregroundMuted}
         autoFocus
@@ -114,19 +136,26 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
       {plainList ? (
         <View>{shown.map(row)}</View>
       ) : (
-        <FlatList data={shown} keyExtractor={(entry) => entry.path} keyboardShouldPersistTaps="handled" renderItem={({ item }) => row(item)} />
+        <FlatList
+          ref={list}
+          data={shown}
+          keyExtractor={(entry) => entry.path}
+          keyboardShouldPersistTaps="handled"
+          onScrollToIndexFailed={() => {}}
+          renderItem={({ item, index }) => row(item, index)}
+        />
       )}
     </View>
   );
 }
 
-function FileRow({ entry, onPress, onInsert, styles }: { entry: Entry; onPress: () => void; onInsert: () => void; styles: Styles }) {
+function FileRow({ entry, active, onPress, onInsert, styles }: { entry: Entry; active: boolean; onPress: () => void; onInsert: () => void; styles: Styles }) {
   const slash = entry.path.lastIndexOf("/");
   const name = entry.kind === "directory" ? `${entry.path.slice(slash + 1)}/` : entry.path.slice(slash + 1);
   const directory = slash >= 0 ? entry.path.slice(0, slash) : "";
   return (
     <View style={styles.rowWrap}>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${entry.path} 선택`} onPress={onPress} style={({ pressed }) => [styles.row, pressed ? styles.rowPressed : null]}>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${entry.path} 선택`} onPress={onPress} style={({ pressed }) => [styles.row, active || pressed ? styles.rowPressed : null]}>
         <Text style={styles.name} numberOfLines={1}>
           {name}
         </Text>
