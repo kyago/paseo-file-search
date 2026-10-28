@@ -84,14 +84,14 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
   const row = (entry: Entry) => <FileRow key={entry.path} entry={entry} onPress={() => pick(entry)} onInsert={() => insert(entry.path)} styles={styles} />;
 
   return (
-    <View style={styles.screen}>
+    <View style={[styles.screen, plainList ? styles.popover : null]}>
       <TextInput
         ref={input}
         style={[styles.input, plainList ? styles.inputBare : null]}
         value={text}
         onChangeText={setText}
         onSubmitEditing={() => files[0] && pick(files[0])}
-        placeholder="파일 이름·경로 (띄어쓰기 = 모두 포함)"
+        placeholder={plainList ? "파일·폴더 이름 검색" : "파일 이름·경로 (띄어쓰기 = 모두 포함)"}
         placeholderTextColor={theme.colors.foregroundMuted}
         autoFocus
         autoCapitalize="none"
@@ -159,7 +159,8 @@ function buildStyles(theme: PluginTheme, compact: boolean) {
       backgroundColor: theme.colors.surface1,
       fontSize: 14,
     },
-    // The popover surface already has its own background.
+    // The popover surface already has its own background and padding; widen it so names fit.
+    popover: { width: 380, padding: 0 },
     inputBare: { backgroundColor: "transparent" },
     rowWrap: { flexDirection: "row", alignItems: "center", gap: 6 },
     row: { flex: 1, paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6 },
