@@ -1,5 +1,9 @@
 import type { ComponentType } from "react";
+import { Platform } from "react-native";
 import type { PluginButtonContentProps, PluginButtonRegistration, PluginClientContext } from "@getpaseo/plugin/client";
+
+// This plugin typechecks without the DOM library. Declare only what this module uses.
+declare const document: { querySelector(selector: string): unknown };
 
 /** Accessibility labels; the shortcut finds the buttons in the page by them. */
 export const PILL_TITLE = "파일 검색 열기";
@@ -70,7 +74,13 @@ export function installPills(client: PluginClientContext, Content: ComponentType
  * no composer pills there; the header button is the entry that is always present.
  */
 export function installHeaderButtons(client: PluginClientContext, Content: ComponentType<PluginButtonContentProps>): () => void {
-  return keepInSync(
+  const buttons = new Set<PluginButtonRegistration>();
+  // On the web the header icon steps aside whenever a pill is on screen, so a chat shows one entry.
+  const watcher = Platform.OS === "web" ? setInterval(() => {
+    const visible = !document.querySelector(`[aria-label="${PILL_TITLE}"]`);
+    for (const button of buttons) button.update({ visible });
+  }, 500) : undefined;
+  const stop = keepInSync(
     async () => {
       const { entries } = await client.paseo.workspaces.list();
       const live = new Map<string, string>();
@@ -78,11 +88,18 @@ export function installHeaderButtons(client: PluginClientContext, Content: Compo
       return live;
     },
     (onChange) => client.paseo.workspaces.subscribe(onChange),
-    (_, workspaceId) =>
-      client.addHeaderButton({
+    (_, workspaceId) => {
+      const button = client.addHeaderButton({
         id: "search",
         workspaceId,
         button: { title: HEADER_TITLE, icon: "Search", behavior: { kind: "popover", Content } },
-      }),
+      });
+      buttons.add(button);
+      return { update: (patch) => button.update(patch), remove: () => (buttons.delete(button), button.remove()) };
+    },
   );
+  return () => {
+    clearInterval(watcher);
+    stop();
+  };
 }

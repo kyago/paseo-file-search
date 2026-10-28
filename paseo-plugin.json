@@ -1,11 +1,11 @@
 {
   "id": "file-search",
   "name": "File search",
-  "description": "Finds files by name or path with every word you type, in a tab beside Files, and opens them in Paseo's file tab.",
+  "description": "Finds files by name or path with every word you type, from a pill above the chat box, and puts them into the chat or opens them in Paseo's file tab.",
   "translations": {
     "ko": {
       "name": "파일 검색",
-      "description": "입력한 단어를 모두 포함하는 파일을 이름·경로로 찾아 Paseo 파일 탭으로 연다. 탐색기 옆 탭 또는 Cmd+K에서 연다."
+      "description": "채팅창 위 알약에서 입력한 단어를 모두 포함하는 파일·폴더를 찾아 채팅에 참조로 넣거나 Paseo 파일 탭으로 연다."
     }
   },
   "media": [],

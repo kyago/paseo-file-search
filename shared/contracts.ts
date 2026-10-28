@@ -16,25 +16,3 @@ export const searchFiles = defineRpc({
 
 /** Client-side diagnostics land in `paseo plugin logs file-search`; the app has no console we can read. */
 export const clientLog = defineRpc({ name: "files.log", input: z.object({ message: z.string() }), output: z.object({}) });
-
-/**
- * The same search for the composer's attachment picker, which only sends a query, so the daemon
- * searches every open workspace. Item shape is what Paseo's picker expects.
- */
-export const attachmentSearch = defineRpc({
-  name: "files.attachments",
-  input: z.object({ query: z.string() }),
-  output: z.object({
-    items: z.array(
-      z.object({
-        id: z.string(),
-        identifier: z.string(),
-        title: z.string(),
-        subtitle: z.string().optional(),
-        url: z.string(),
-        text: z.string(),
-        resourceType: z.string(),
-      }),
-    ),
-  }),
-});
