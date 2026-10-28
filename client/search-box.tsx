@@ -4,7 +4,7 @@ import { useRpc, useWorkspace } from "@getpaseo/plugin/client";
 import { copyText, FlatList, TextInput, useToast } from "@getpaseo/plugin/client/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Pressable, Text, type TextInput as NativeTextInput, View } from "react-native";
+import { type FlatList as NativeFlatList, Pressable, Text, type TextInput as NativeTextInput, View } from "react-native";
 import { searchFiles } from "../shared/contracts";
 import { insertReference } from "./composer";
 import { openWorkspaceFile } from "./open-file";
@@ -58,7 +58,7 @@ export function SearchBox({ theme, layout, host, workspaceId, mode, plainList, o
   });
   const files: Entry[] = query ? (results.data?.files ?? []) : [];
   const shown = plainList ? files.slice(0, 20) : files;
-  const list = useRef<{ scrollToIndex(params: { index: number; viewPosition?: number }): void }>(null);
+  const list = useRef<NativeFlatList<Entry>>(null);
   useEffect(() => setActive(0), [results.data]);
   const move = (step: number) => {
     if (shown.length === 0) return;
