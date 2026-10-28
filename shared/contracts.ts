@@ -1,12 +1,12 @@
 import { defineRpc } from "@getpaseo/plugin";
 import { z } from "zod";
 
-/** File names under a workspace root that contain every word of the query. */
+/** Files and folders under a workspace root whose path contains every word of the query; matching folders lead. */
 export const searchFiles = defineRpc({
   name: "files.search",
   input: z.object({ cwd: z.string(), query: z.string(), limit: z.number().int().min(1).max(500).default(100) }),
   output: z.object({
-    files: z.array(z.object({ path: z.string() })),
+    files: z.array(z.object({ path: z.string(), kind: z.enum(["file", "directory"]) })),
     /** Matches before the limit was applied. */
     total: z.number(),
     /** Files in the index for this root. */

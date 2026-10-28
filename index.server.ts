@@ -1,19 +1,21 @@
 import type { PluginServerContext } from "@getpaseo/plugin/server";
 import { toAttachmentItems } from "./server/attachments.ts";
-import { listEntries, listFiles, matchFiles } from "./server/files.ts";
+import { listEntries, matchFiles } from "./server/files.ts";
 import { attachmentSearch, searchFiles } from "./shared/contracts";
 import { triggerSettings } from "./shared/settings";
 
 const PICKER_LIMIT = 30;
 const PICKER_FOLDERS = 8;
+const PANEL_FOLDERS = 8;
 
 export default function contribute(server: PluginServerContext) {
   // The client reads these through settings RPCs the daemon only exposes once the server registers them.
   server.registerSettings(triggerSettings);
   server.handle(searchFiles, async ({ cwd, query, limit }) => {
-    const files = await listFiles(cwd);
+    const { files, dirs } = await listEntries(cwd);
+    const folders = matchFiles(dirs, query, PANEL_FOLDERS).hits.map((path) => ({ path, kind: "directory" as const }));
     const { hits, total } = matchFiles(files, query, limit);
-    return { files: hits.map((path) => ({ path })), total, indexed: files.length };
+    return { files: [...folders, ...hits.map((path) => ({ path, kind: "file" as const }))], total: total + folders.length, indexed: files.length };
   });
 
   // Folders that match lead, so a reference to a whole folder is one pick; files follow.
