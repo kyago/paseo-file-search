@@ -2,7 +2,7 @@ import type { ComponentType } from "react";
 import type { PluginButtonContentProps, PluginButtonRegistration, PluginClientContext } from "@getpaseo/plugin/client";
 
 /** The pill's accessibility label; the shortcut finds it in the page by it. */
-export const PILL_TITLE = "파일 검색 열기";
+export const PILL_TITLE = "참조 검색 열기";
 
 /**
  * Keeps one registration per live id: `list` names what should exist now, `add` registers one.
@@ -44,7 +44,7 @@ function keepInSync(
   };
 }
 
-/** A "파일 검색" pill above the chat box of every live top-level agent on this host. */
+/** A "참조 검색" pill (files and sessions) above the chat box of every live top-level agent on this host. */
 export function installPills(client: PluginClientContext, Content: ComponentType<PluginButtonContentProps>): () => void {
   return keepInSync(
     async () => {
@@ -59,7 +59,7 @@ export function installPills(client: PluginClientContext, Content: ComponentType
         id: "search",
         workspaceId,
         agentId,
-        button: { title: PILL_TITLE, label: "파일 검색", icon: "Search", behavior: { kind: "popover", Content } },
+        button: { title: PILL_TITLE, label: "참조 검색", icon: "Search", behavior: { kind: "popover", Content } },
       }),
   );
 }

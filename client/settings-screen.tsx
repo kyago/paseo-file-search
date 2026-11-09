@@ -21,8 +21,8 @@ export function TriggerSettingsScreen() {
     <SettingsSection title="채팅창 단축키">
       <SettingsCard>
         <SettingsSwitch
-          label="단축키로 파일 검색 열기"
-          hint="워크스페이스에서 단축키를 누르면 채팅창 위 '파일 검색' 알약이 열리고, 고른 파일이 채팅 입력창에 참조로 들어갑니다. 데스크톱·웹에서만 동작합니다."
+          label="단축키로 참조 검색 열기"
+          hint="워크스페이스에서 단축키를 누르면 채팅창 위 '참조 검색' 알약이 열리고, 고른 파일·세션이 채팅 입력창에 참조로 들어갑니다. 데스크톱·웹에서만 동작합니다."
           error={settings.saveError ?? undefined}
           value={values.enabled}
           onValueChange={(enabled) => void settings.save({ ...values, enabled }, revision)}

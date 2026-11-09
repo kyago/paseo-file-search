@@ -106,17 +106,17 @@ export function clickPill(title: string): boolean {
 }
 
 /**
- * Puts a quoted path into the chat box where the shortcut was pressed (or at the caret) and returns
- * focus there. React owns the box, so the value goes through the prototype setter and an input
- * event, the way React reads user typing.
+ * Puts a reference (a quoted path or a session) into the chat box where the shortcut was pressed (or
+ * at the caret) and returns focus there. React owns the box, so the value goes through the prototype
+ * setter and an input event, the way React reads user typing.
  */
-export function insertReference(path: string, pending?: { composer: unknown; start: number; end: number }): boolean {
+export function insertReference(reference: string, pending?: { composer: unknown; start: number; end: number }): boolean {
   if (Platform.OS !== "web") return false;
   const composer = (pending?.composer as TextArea | undefined) ?? document.querySelector(COMPOSER);
   if (!composer) return false;
   const start = pending?.start ?? composer.selectionStart;
   const end = pending?.end ?? composer.selectionEnd;
-  const { text, caret } = spliceReference(composer.value, Math.min(start, composer.value.length), Math.min(end, composer.value.length), path);
+  const { text, caret } = spliceReference(composer.value, Math.min(start, composer.value.length), Math.min(end, composer.value.length), reference);
   const setter = Object.getOwnPropertyDescriptor(Object.getPrototypeOf(composer), "value")?.set;
   if (!setter) return false;
   setter.call(composer, text);

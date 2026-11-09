@@ -1,13 +1,27 @@
 /** Pure text helpers for the chat box, kept free of the DOM so they run under node:test. */
 
-/** Paseo's own `@` mention writes the path quoted; a space on each side keeps it a separate word. */
-export function spliceReference(text: string, start: number, end: number, path: string): { text: string; caret: number } {
+/** Paseo's own `@` mention writes the path quoted. */
+export const quotePath = (path: string) => `"${path.replace(/"/g, '\\"')}"`;
+
+/**
+ * Names another Paseo session so the agent reading the prompt can message it with
+ * `send_agent_prompt`; the id stays valid when the session's title changes.
+ */
+export const sessionReference = (title: string, agentId: string) => `[Paseo 세션 "${title.replace(/"/g, "'")}" agentId=${agentId}]`;
+
+/** True when every word of the query appears in the text, ignoring case; NFC so Korean typed on a Mac matches. */
+export function matchesWords(text: string, query: string): boolean {
+  const haystack = text.normalize("NFC").toLowerCase();
+  const words = query.normalize("NFC").toLowerCase().split(/\s+/).filter(Boolean);
+  return words.length > 0 && words.every((word) => haystack.includes(word));
+}
+
+/** Puts a reference into the text with a space on each side, keeping it a separate word. */
+export function spliceReference(text: string, start: number, end: number, reference: string): { text: string; caret: number } {
   const before = text.slice(0, start);
   const after = text.slice(end);
-  const quoted = `"${path.replace(/"/g, '\\"')}"`;
   const lead = before && !/\s$/.test(before) ? " " : "";
-  const trail = after && !/^\s/.test(after) ? " " : " ";
-  const next = `${before}${lead}${quoted}${trail}`;
+  const next = `${before}${lead}${reference} `;
   return { text: `${next}${after}`, caret: next.length };
 }
 

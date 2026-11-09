@@ -1,12 +1,26 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isCharacterTrigger, matchesShortcut, parseShortcut, spliceReference, startsWord, workspaceIdFromPath } from "../client/composer-text.ts";
+import { isCharacterTrigger, matchesShortcut, matchesWords, parseShortcut, quotePath, sessionReference, spliceReference, startsWord, workspaceIdFromPath } from "../client/composer-text.ts";
 
 test("a reference lands quoted at the trigger position with spaces around it", () => {
-  assert.deepEqual(spliceReference("", 0, 0, "memory/facts/a.md"), { text: '"memory/facts/a.md" ', caret: 20 });
-  assert.deepEqual(spliceReference("정리해줘 ", 5, 5, "a b.md"), { text: '정리해줘 "a b.md" ', caret: 14 });
-  assert.equal(spliceReference("앞뒤", 1, 1, "x").text, '앞 "x" 뒤');
-  assert.equal(spliceReference("say \"hi\"", 4, 8, "q\"t").text, 'say "q\\"t" ');
+  const splice = (text: string, start: number, end: number, path: string) => spliceReference(text, start, end, quotePath(path));
+  assert.deepEqual(splice("", 0, 0, "memory/facts/a.md"), { text: '"memory/facts/a.md" ', caret: 20 });
+  assert.deepEqual(splice("정리해줘 ", 5, 5, "a b.md"), { text: '정리해줘 "a b.md" ', caret: 14 });
+  assert.equal(splice("앞뒤", 1, 1, "x").text, '앞 "x" 뒤');
+  assert.equal(splice("say \"hi\"", 4, 8, "q\"t").text, 'say "q\\"t" ');
+});
+
+test("a session reference carries the title and the id an agent can message", () => {
+  assert.equal(sessionReference('가계부 "봇"', "e336ab32"), `[Paseo 세션 "가계부 '봇'" agentId=e336ab32]`);
+  assert.equal(spliceReference("이건 에게 물어봐", 3, 3, sessionReference("A", "x")).text, '이건 [Paseo 세션 "A" agentId=x] 에게 물어봐');
+});
+
+test("session titles match when every typed word appears, in any order", () => {
+  assert.equal(matchesWords("부부 지출 자동수집 가계부 봇·웹앱", "가계부 부부"), true);
+  assert.equal(matchesWords("Keycloak SMTP 설정", "smtp keycloak"), true);
+  assert.equal(matchesWords("부부 지출".normalize("NFD"), "지출"), true);
+  assert.equal(matchesWords("부부 지출", "가계부"), false);
+  assert.equal(matchesWords("부부 지출", "  "), false);
 });
 
 test("the trigger only counts at a word start, like Paseo's @", () => {

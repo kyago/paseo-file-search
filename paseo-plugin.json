@@ -1,13 +1,15 @@
 {
   "id": "file-search",
   "name": "File search",
-  "description": "Finds files by name or path with every word you type, from a pill above the chat box, and puts them into the chat or opens them in Paseo's file tab.",
+  "description": "Finds files by name or path, and other sessions by title, with every word you type, from a pill above the chat box. Files go into the chat or open in Paseo's file tab; a session goes in with its agent id so the agent can message it.",
   "translations": {
     "ko": {
       "name": "파일 검색",
-      "description": "채팅창 위 알약에서 입력한 단어를 모두 포함하는 파일·폴더를 찾아 채팅에 참조로 넣거나 Paseo 파일 탭으로 연다."
+      "description": "채팅창 위 알약에서 입력한 단어를 모두 포함하는 파일·폴더와 다른 세션을 찾는다. 파일은 채팅에 참조로 넣거나 파일 탭으로 열고, 세션은 agentId와 함께 넣어 에이전트가 그 세션에 메시지를 보낼 수 있게 한다."
     }
   },
   "media": [],
-  "requirements": { "paseo": ">=0.15.0" }
+  "requirements": {
+    "paseo": ">=0.15.0"
+  }
 }
