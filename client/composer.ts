@@ -29,7 +29,7 @@ interface KeyEvent {
 declare const document: {
   activeElement: TextArea | null;
   querySelector(selector: string): (TextArea & { click(): void; dispatchEvent(event: unknown): boolean; getAttribute(name: string): string | null }) | null;
-  querySelectorAll(selector: string): ArrayLike<{ tagName: string; getAttribute(name: string): string | null }>;
+  querySelectorAll(selector: string): ArrayLike<{ tagName: string; getAttribute(name: string): string | null; dispatchEvent(event: unknown): boolean; getBoundingClientRect(): { width: number; height: number } }>;
 };
 const log = (message: string) => shared.log?.(message);
 declare const navigator: { platform: string; userAgent: string };
@@ -93,10 +93,14 @@ export function installTrigger(open: (workspaceId: string) => void): () => void 
   return () => window.removeEventListener("keydown", onKeyDown, true);
 }
 
-/** Presses the pill with this accessibility label, if the page shows one. */
+/** Presses the visible pill with this accessibility label, if the page shows one. */
 export function clickPill(title: string): boolean {
   if (Platform.OS !== "web") return false;
-  const pill = document.querySelector(`[aria-label="${title}"]`);
+  // Tabs and workspaces in the background stay mounted with 0x0 pills, and they can come first in the page.
+  const pill = Array.from(document.querySelectorAll(`[aria-label="${title}"]`)).find((element) => {
+    const { width, height } = element.getBoundingClientRect();
+    return width > 0 && height > 0;
+  });
   if (!pill) return false;
   // The pill is a menu trigger; depending on Paseo's build it opens on pointer down or on click, so send the whole press.
   for (const [type, Ctor] of [["pointerdown", PointerEvent], ["mousedown", MouseEvent], ["pointerup", PointerEvent], ["mouseup", MouseEvent], ["click", MouseEvent]] as const) {
