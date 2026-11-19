@@ -1,6 +1,6 @@
 import type { PluginTheme } from "@getpaseo/plugin";
 import type { PluginButtonContentProps } from "@getpaseo/plugin/client";
-import { usePaseo, useRpc, useWorkspace } from "@getpaseo/plugin/client";
+import { useComposers, usePaseo, useRpc, useWorkspace } from "@getpaseo/plugin/client";
 import { copyText, TextInput, useToast } from "@getpaseo/plugin/client/react-native";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -29,6 +29,8 @@ export function SearchBox(props: PluginButtonContentProps) {
   const cwd = useWorkspace(workspaceId, (workspace) => workspace.directory);
   const search = useRpc(searchFiles);
   const toast = useToast();
+  // The phone apps have no DOM chat box to write into; Paseo's composer API reaches it there.
+  const [composer] = useComposers(self ? { agentId: self } : { focused: true });
   const input = useRef<NativeTextInput>(null);
   const [text, setText] = useState("");
   const [query, setQuery] = useState("");
@@ -80,7 +82,15 @@ export function SearchBox(props: PluginButtonContentProps) {
 
   const insert = (reference: string) => {
     const pending = shared.pending?.workspaceId === workspaceId ? shared.pending : undefined;
-    if (!insertReference(reference, pending)) {
+    if (insertReference(reference, pending)) {
+      // Written through the page's own chat box (web and desktop), at the caret the shortcut saw.
+    } else if (composer) {
+      composer.insertText(`${composer.prompt && !/\s$/.test(composer.prompt) ? " " : ""}${reference} `);
+      shared.pending = undefined;
+      close();
+      void composer.focus().catch(() => {});
+      return;
+    } else {
       void copyText(reference).then(
         () => toast.show("이 기기에서는 입력창에 넣을 수 없어 참조를 복사했습니다."),
         () => toast.error("채팅 입력창을 찾지 못했습니다."),
